@@ -10,11 +10,14 @@ Custom API Integration Manager is a SaaS solution designed for non-developers to
 - Real-time data synchronization
 - Detailed analytics and logging
 - Dashboard with API usage overview, integration status, and subscription information
+- Pricing page with subscription tiers and Stripe integration for easy upgrades
 
 ## Project Structure
 
 - `app/`: Contains the routing and main pages (Next.js App Router)
   - `dashboard/`: Dashboard page
+  - `pricing/`: Pricing and subscription page
+  - `api/`: API routes for server-side operations
 - `components/`: For reusable UI elements
 - `utils/`: Utility functions and configurations
   - `supabase/`: Supabase client and server configurations
