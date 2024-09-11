@@ -12,7 +12,7 @@ Custom API Integration Manager is a SaaS solution designed for non-developers to
 
 ## Project Structure
 
-- `pages/`: Contains the routing and main pages (Next.js Pages Router)
+- `app/`: Contains the routing and main pages (Next.js App Router)
 - `components/`: For reusable UI elements
 - `utils/`: Utility functions and configurations
   - `supabase/`: Supabase client and server configurations
@@ -20,7 +20,7 @@ Custom API Integration Manager is a SaaS solution designed for non-developers to
 
 ## Technologies Used
 
-- Next.js
+- Next.js (with App Router)
 - TypeScript
 - Tailwind CSS (with dark mode support)
 - Supabase

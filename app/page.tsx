@@ -1,7 +1,7 @@
-import { createClient } from '../utils/supabase/server'
+import { createClient } from '@/utils/supabase/server'
 import { cookies } from 'next/headers'
 
-export default async function Page() {
+export default async function Home() {
   const cookieStore = cookies()
   const supabase = createClient(cookieStore)
 
@@ -13,10 +13,13 @@ export default async function Page() {
   }
 
   return (
-    <ul>
-      {todos?.map((todo: { id: string; title: string }) => (
-        <li key={todo.id}>{todo.title}</li>
-      ))}
-    </ul>
+    <main>
+      <h1>Custom API Integration Manager</h1>
+      <ul>
+        {todos?.map((todo: { id: string; title: string }) => (
+          <li key={todo.id}>{todo.title}</li>
+        ))}
+      </ul>
+    </main>
   )
 }
