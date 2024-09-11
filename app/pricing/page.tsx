@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { supabase } from '@/utils/supabase/client';
+import { supabase, signInWithGoogle } from '@/utils/supabase/client';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
