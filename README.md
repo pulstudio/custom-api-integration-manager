@@ -29,7 +29,7 @@ Custom API Integration Manager is a SaaS solution designed for non-developers to
 - Next.js (with App Router)
 - TypeScript
 - Tailwind CSS (with dark mode support)
-- Supabase
+- Supabase (for authentication and database)
 - Stripe (for payment processing)
 
 ## Getting Started
