@@ -28,15 +28,19 @@ export async function POST(req: Request) {
 
     if (!customerId) {
       const { data: userDetails } = await supabase.auth.admin.getUserById(userId);
-      const customer = await stripe.customers.create({
-        email: userDetails.user.email,
-      });
-      customerId = customer.id;
+      if (userDetails && userDetails.user && userDetails.user.email) {
+        const customer = await stripe.customers.create({
+          email: userDetails.user.email,
+        });
+        customerId = customer.id;
 
-      await supabase
-        .from('users')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', userId);
+        await supabase
+          .from('users')
+          .update({ stripe_customer_id: customerId })
+          .eq('id', userId);
+      } else {
+        throw new Error('User email not found');
+      }
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -54,7 +58,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ id: session.id });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err as Error;
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
