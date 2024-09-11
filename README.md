@@ -37,3 +37,7 @@ We welcome contributions! Please see our contributing guidelines (coming soon) f
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Deployment
+
+This project is deployed on Vercel. You can view the live version at [your-vercel-url-here].
