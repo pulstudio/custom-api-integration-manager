@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { loadStripe } from '@stripe/stripe-js';
-import { supabase, signInWithGoogle } from '@/utils/supabase/client';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { createClient } from '@/utils/supabase/client';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string);
 
 const plans = [
   {
@@ -46,7 +46,7 @@ export default function PricingPage() {
       body: JSON.stringify({ priceId, userId: user.id }),
     });
     const session = await response.json();
-    const result = await stripe!.redirectToCheckout({
+    const result = await (stripe as Stripe).redirectToCheckout({
       sessionId: session.id,
     });
     if (result.error) {

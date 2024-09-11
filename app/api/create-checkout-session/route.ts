@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
+import { logActivity } from '@/utils/supabase/client';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+  apiVersion: '2024-06-20', // Use the latest version or the one specified in your Stripe dashboard
 });
 
 export async function POST(req: Request) {
   const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();  // Remove the cookieStore argument
   const { priceId, userId } = await req.json();
 
   try {
@@ -58,10 +59,9 @@ export async function POST(req: Request) {
     });
 
     // Log the checkout session creation
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      action: 'Initiated subscription change',
-      details: { priceId },
+    await logActivity('Initiated subscription change', { 
+      userId, 
+      priceId 
     });
 
     return NextResponse.json({ id: session.id });
@@ -70,10 +70,9 @@ export async function POST(req: Request) {
     console.error('Error creating checkout session:', error);
     
     // Log the error
-    await supabase.from('activity_logs').insert({
-      user_id: userId,
-      action: 'Error creating checkout session',
-      details: { error: error.message },
+    await logActivity('Error creating checkout session', { 
+      userId, 
+      error: error.message 
     });
 
     return NextResponse.json({ error: error.message }, { status: 500 });

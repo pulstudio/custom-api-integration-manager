@@ -2,75 +2,91 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
+// Remove the unused import
+// import { logActivity } from '@/utils/supabase/client';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+  apiVersion: '2024-06-20',
 });
 
 export async function POST(req: Request) {
   const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();  // Remove the cookieStore argument
   const body = await req.text();
   const sig = req.headers.get('stripe-signature') as string;
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET as string);
   } catch (err: unknown) {
     const error = err as Error;
     return NextResponse.json({ error: `Webhook Error: ${error.message}` }, { status: 400 });
   }
 
   switch (event.type) {
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated':
-      const subscription = event.data.object as Stripe.Subscription;
-      const stripeCustomerId = subscription.customer as string;
-      const planId = subscription.items.data[0].price.id;
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string;
 
-      let tier: string;
-      let limit: number;
-
-      switch (planId) {
-        case 'price_basic123':
-          tier = 'free';
-          limit = 1;
-          break;
-        case 'price_pro456':
-          tier = 'pro';
-          limit = 5;
-          break;
-        case 'price_enterprise789':
-          tier = 'enterprise';
-          limit = 999999; // Effectively unlimited
-          break;
-        default:
-          tier = 'free';
-          limit = 1;
-      }
-
-      const { error } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('users')
-        .update({ subscription_tier: tier, integration_limit: limit })
-        .eq('stripe_customer_id', stripeCustomerId);
+        .select('id')
+        .eq('stripe_customer_id', customerId)
+        .single();
 
-      if (error) {
-        console.error('Error updating user subscription:', error);
-        return NextResponse.json({ error: 'Failed to update user subscription' }, { status: 500 });
+      if (userError) {
+        console.error('Error fetching user:', userError);
+        return new Response('User not found', { status: 404 });
       }
 
-      // Log the subscription change
-      await supabase.from('activity_logs').insert({
-        user_id: (await supabase.from('users').select('id').eq('stripe_customer_id', stripeCustomerId).single()).data?.id,
-        action: 'Subscription changed',
-        details: { tier, limit },
-      });
+      // Update user's subscription status
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ subscription_id: subscriptionId, subscription_status: 'active' })
+        .eq('id', userData.id);
+
+      if (updateError) {
+        console.error('Error updating user subscription:', updateError);
+        return new Response('Error updating subscription', { status: 500 });
+      }
 
       break;
+    }
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object as Stripe.Subscription;
+      const customerId = subscription.customer as string;
 
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('stripe_customer_id', customerId)
+        .single();
+
+      if (userError) {
+        console.error('Error fetching user:', userError);
+        return new Response('User not found', { status: 404 });
+      }
+
+      // Update user's subscription status
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ 
+          subscription_status: subscription.status,
+          subscription_id: subscription.status === 'active' ? subscription.id : null
+        })
+        .eq('id', userData.id);
+
+      if (updateError) {
+        console.error('Error updating user subscription:', updateError);
+        return new Response('Error updating subscription', { status: 500 });
+      }
+
+      break;
+    }
+    // ... other cases
   }
 
   return NextResponse.json({ received: true });

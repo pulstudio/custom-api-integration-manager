@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 interface ActivityLogEntry {
   id: string;
   action: string;
-  details: any;
+  details: Record<string, unknown>;
   created_at: string;
 }
 
@@ -25,7 +25,7 @@ export default function ActivityLog() {
       if (error) {
         console.error('Error fetching activity logs:', error);
       } else {
-        setLogs(data);
+        setLogs(data || []);
       }
     };
 
@@ -34,7 +34,6 @@ export default function ActivityLog() {
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-semibold mb-4">Activity Log</h2>
       <ul className="space-y-2">
         {logs.map((log) => (
           <li key={log.id} className="bg-gray-100 p-2 rounded">

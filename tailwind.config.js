@@ -1,19 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './app/**/*.{js,ts,jsx,tsx}',
-    './components/**/*.{js,ts,jsx,tsx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        primary: '#1DA1F2',
-        secondary: '#14171A',
-        background: '#F5F8FA',
-        text: '#14171A',
+        'custom-background': '#f0f0f0',
+        'background': '#ffffff', // Add this line
+        'text': '#333333', // Add this line
+        'primary': '#1DA1F2', // Add this line
       },
       boxShadow: {
-        'custom': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+        'custom': '0 4px 6px rgba(0, 0, 0, 0.1)',
       },
     },
   },
