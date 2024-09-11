@@ -27,41 +27,48 @@ export default function Dashboard() {
   const [recentEvents, setRecentEvents] = useState<WebhookEvent[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
       const supabase = createClient();
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (userError) {
-        console.error('Error fetching user:', userError);
+      if (sessionError) {
+        console.error('Error fetching session:', sessionError);
+        setLoading(false);
         return;
       }
 
-      if (userData.user) {
-        const { data: userDetails, error: detailsError } = await supabase
-          .from('users')
-          .select('name, subscription_tier, integration_limit')
-          .eq('id', userData.user.id)
-          .single();
-
-        if (detailsError) {
-          console.error('Error fetching user details:', detailsError);
-        } else {
-          setUser(userDetails);
-        }
-
-        const { data: integrationsData, error: integrationsError } = await supabase
-          .from('integrations')
-          .select('name, status')
-          .eq('user_id', userData.user.id);
-
-        if (integrationsError) {
-          console.error('Error fetching integrations:', integrationsError);
-        } else {
-          setIntegrations(integrationsData);
-        }
+      if (!session) {
+        window.location.href = '/auth/login';
+        return;
       }
+
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('name, subscription_tier, integration_limit')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError) {
+        console.error('Error fetching user details:', userError);
+      } else {
+        setUser(userData);
+      }
+
+      const { data: integrationsData, error: integrationsError } = await supabase
+        .from('integrations')
+        .select('name, status')
+        .eq('user_id', session.user.id);
+
+      if (integrationsError) {
+        console.error('Error fetching integrations:', integrationsError);
+      } else {
+        setIntegrations(integrationsData);
+      }
+
+      setLoading(false);
     };
 
     fetchUserData();
@@ -87,7 +94,7 @@ export default function Dashboard() {
     onSwipedRight: () => setActiveSection((prev) => (prev - 1 + sections.length) % sections.length),
   });
 
-  const logActivity = async (action: string, details?: any) => {
+  const logActivity = async (action: string, details?: unknown) => {
     const supabase = createClient();
     const { error } = await supabase.from('activity_logs').insert({
       action,
@@ -99,17 +106,24 @@ export default function Dashboard() {
     }
   };
 
-  const handleRetryFailedAction = async (actionId: string) => {
-    // Implement retry logic here
-    console.log('Retrying action:', actionId);
-    // After successful retry:
-    logActivity('Retried action', { actionId });
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/auth/login';
   };
+
+  if (loading) return <p className="text-center mt-8">Loading...</p>;
 
   return (
     <div className="container mx-auto px-4 py-8" {...handlers}>
       <header className="flex flex-col md:flex-row items-center justify-between mb-8">
         <h1 className="text-3xl font-bold mb-4 md:mb-0">Welcome, {user?.name}</h1>
+        <button
+          onClick={handleSignOut}
+          className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded"
+        >
+          Sign Out
+        </button>
       </header>
 
       <div className="flex mb-4 overflow-x-auto">
@@ -173,12 +187,10 @@ export default function Dashboard() {
         </section>
       )}
 
-      {activeSection === 3 && (
-        <section className="card mb-8">
-          <h2 className="text-xl font-semibold mb-4">Activity Log</h2>
-          <ActivityLog />
-        </section>
-      )}
+      <section className="card mb-8">
+        <h2 className="text-xl font-semibold mb-4">Activity Log</h2>
+        <ActivityLog />
+      </section>
     </div>
   );
 }
