@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { v4 as uuidv4 } from 'uuid';
 
 const platforms = [
   { name: 'Salesforce', logo: '/logos/salesforce.png' },
@@ -72,6 +73,7 @@ export default function ApiIntegrationWizard() {
   const [apiKey, setApiKey] = useState('');
   const [mappedFields, setMappedFields] = useState([]);
   const [testResult, setTestResult] = useState(null);
+  const [webhookUrl, setWebhookUrl] = useState('');
 
   const handlePlatformSelect = (platform) => {
     setSelectedPlatform(platform);
@@ -87,6 +89,12 @@ export default function ApiIntegrationWizard() {
 
   const handleFieldDrop = (item) => {
     setMappedFields((prev) => [...prev, item]);
+  };
+
+  const generateWebhookUrl = () => {
+    const integrationId = uuidv4();
+    const url = `${window.location.origin}/api/webhook?integrationId=${integrationId}`;
+    setWebhookUrl(url);
   };
 
   const handleTestIntegration = () => {
@@ -163,18 +171,27 @@ export default function ApiIntegrationWizard() {
       )}
       {step === 4 && (
         <div>
-          <h3 className="text-xl mb-4">Step 4: Test Results</h3>
-          {testResult === 'success' ? (
-            <div className="bg-green-100 border-green-500 text-green-700 p-4 rounded">
-              <p className="font-bold">Test Successful</p>
-              <p>Your integration is working correctly.</p>
-            </div>
-          ) : (
-            <div className="bg-red-100 border-red-500 text-red-700 p-4 rounded">
-              <p className="font-bold">Test Failed</p>
-              <p>There was an error with your integration. Please try again.</p>
+          <h3 className="text-xl mb-4">Step 4: Webhook Configuration</h3>
+          <button onClick={generateWebhookUrl} className="btn mb-4">
+            Generate Webhook URL
+          </button>
+          {webhookUrl && (
+            <div>
+              <p className="mb-2">Your webhook URL:</p>
+              <input
+                type="text"
+                value={webhookUrl}
+                readOnly
+                className="w-full p-2 border rounded mb-4"
+              />
+              <p className="text-sm text-gray-600">
+                Use this URL in your integration to receive real-time updates.
+              </p>
             </div>
           )}
+          <button onClick={handleTestIntegration} className="btn mt-4">
+            Finish Setup
+          </button>
         </div>
       )}
     </div>

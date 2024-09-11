@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
 import { useSwipeable } from 'react-swipeable';
 
@@ -20,6 +21,23 @@ const mockData = {
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState(0);
   const sections = ['API Usage', 'Integrations', 'Subscription'];
+  const [recentEvents, setRecentEvents] = useState([]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('webhook_events')
+      .on('INSERT', { event: 'webhook_events' }, (payload) => {
+        setRecentEvents((prev) => [payload.new, ...prev.slice(0, 4)]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handlers = useSwipeable({
     onSwipedLeft: () => setActiveSection((prev) => (prev + 1) % sections.length),
@@ -82,6 +100,14 @@ export default function Dashboard() {
                 }`}>
                   {integration.status}
                 </span>
+              </li>
+            ))}
+          </ul>
+          <h3 className="text-lg font-semibold mt-6 mb-2">Recent Events</h3>
+          <ul className="space-y-2">
+            {recentEvents.map((event, index) => (
+              <li key={index} className="text-sm text-gray-600">
+                {event.event_type} - {new Date(event.created_at).toLocaleString()}
               </li>
             ))}
           </ul>
