@@ -97,6 +97,7 @@ export default function ApiIntegrationWizard() {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [user, setUser] = useState<{ subscription_tier: string; integration_limit: number } | null>(null);
   const [currentIntegrations, setCurrentIntegrations] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -166,28 +167,52 @@ export default function ApiIntegrationWizard() {
     setStep(4);
   };
 
+  const logActivity = async (action: string, details?: any) => {
+    const supabase = createClient();
+    const { error } = await supabase.from('activity_logs').insert({
+      action,
+      details,
+    });
+
+    if (error) {
+      console.error('Error logging activity:', error);
+    }
+  };
+
   const handleFinishSetup = async () => {
     if (user && currentIntegrations >= user.integration_limit) {
-      alert('You have reached your integration limit. Please upgrade your plan to create more integrations.');
+      setError('You have reached your integration limit. Please upgrade your plan to create more integrations.');
       return;
     }
 
-    // Here you would save the integration to your database
-    // For now, we'll just simulate a successful save
-    setCurrentIntegrations(prev => prev + 1);
-    alert('Integration saved successfully!');
-    // Reset the wizard
-    setStep(1);
-    setSelectedPlatform(null);
-    setApiKey('');
-    setMappedFields([]);
-    setTestResult(null);
-    setWebhookUrl('');
+    try {
+      // Here you would save the integration to your database
+      // For now, we'll just simulate a successful save
+      setCurrentIntegrations(prev => prev + 1);
+      logActivity('Created integration', { platform: selectedPlatform?.name });
+      alert('Integration saved successfully!');
+      // Reset the wizard
+      setStep(1);
+      setSelectedPlatform(null);
+      setApiKey('');
+      setMappedFields([]);
+      setTestResult(null);
+      setWebhookUrl('');
+      setError(null);
+    } catch (err) {
+      setError('Failed to create integration. Please try again.');
+      console.error('Error creating integration:', err);
+    }
   };
 
   return (
     <div className="max-w-2xl mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-4">API Integration Wizard</h2>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
       {step === 1 && (
         <div>
           <h3 className="text-xl mb-4">Step 1: Select Platform</h3>

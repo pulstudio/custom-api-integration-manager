@@ -60,6 +60,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Failed to update user subscription' }, { status: 500 });
       }
 
+      // Log the subscription change
+      await supabase.from('activity_logs').insert({
+        user_id: (await supabase.from('users').select('id').eq('stripe_customer_id', stripeCustomerId).single()).data?.id,
+        action: 'Subscription changed',
+        details: { tier, limit },
+      });
+
       break;
 
     default:

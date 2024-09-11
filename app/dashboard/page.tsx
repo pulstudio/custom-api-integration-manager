@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useSwipeable } from 'react-swipeable';
+import ActivityLog from '../components/ActivityLog';
 
 interface User {
   name: string;
@@ -86,6 +87,25 @@ export default function Dashboard() {
     onSwipedRight: () => setActiveSection((prev) => (prev - 1 + sections.length) % sections.length),
   });
 
+  const logActivity = async (action: string, details?: any) => {
+    const supabase = createClient();
+    const { error } = await supabase.from('activity_logs').insert({
+      action,
+      details,
+    });
+
+    if (error) {
+      console.error('Error logging activity:', error);
+    }
+  };
+
+  const handleRetryFailedAction = async (actionId: string) => {
+    // Implement retry logic here
+    console.log('Retrying action:', actionId);
+    // After successful retry:
+    logActivity('Retried action', { actionId });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8" {...handlers}>
       <header className="flex flex-col md:flex-row items-center justify-between mb-8">
@@ -150,6 +170,13 @@ export default function Dashboard() {
           <p className="mb-2">Current Plan: <strong>{user?.subscription_tier}</strong></p>
           <p className="mb-4">Integration Limit: {user?.integration_limit}</p>
           <a href="/pricing" className="btn">Upgrade Plan</a>
+        </section>
+      )}
+
+      {activeSection === 3 && (
+        <section className="card mb-8">
+          <h2 className="text-xl font-semibold mb-4">Activity Log</h2>
+          <ActivityLog />
         </section>
       )}
     </div>

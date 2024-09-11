@@ -57,9 +57,25 @@ export async function POST(req: Request) {
       cancel_url: `${req.headers.get('origin')}/pricing`,
     });
 
+    // Log the checkout session creation
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      action: 'Initiated subscription change',
+      details: { priceId },
+    });
+
     return NextResponse.json({ id: session.id });
   } catch (err: unknown) {
     const error = err as Error;
+    console.error('Error creating checkout session:', error);
+    
+    // Log the error
+    await supabase.from('activity_logs').insert({
+      user_id: userId,
+      action: 'Error creating checkout session',
+      details: { error: error.message },
+    });
+
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
