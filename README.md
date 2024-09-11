@@ -11,6 +11,11 @@ Custom API Integration Manager is a SaaS solution designed for non-developers to
 - Detailed analytics and logging
 - Dashboard with API usage overview, integration status, and subscription information
 - Pricing page with subscription tiers and Stripe integration for easy upgrades
+- API Integration Wizard for non-developers
+  - Platform selection
+  - OAuth or API key connection
+  - Drag-and-drop field mapping
+  - Integration testing with instant feedback
 
 ## Project Structure
 
