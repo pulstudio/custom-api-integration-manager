@@ -12,10 +12,11 @@ Custom API Integration Manager is a SaaS solution designed for non-developers to
 
 ## Project Structure
 
-- `pages/`: Contains the routing and main pages (Next.js Pages Router)
-- `components/`: For reusable UI elements
-- `lib/`: For utility functions (e.g., API calls)
-- `styles/`: For global and component-specific styles
+- `src/`: Contains the main source code
+  - `pages/`: Contains the routing and main pages (Next.js Pages Router)
+  - `components/`: For reusable UI elements
+  - `lib/`: For utility functions (e.g., API calls)
+  - `styles/`: For global and component-specific styles
 
 ## Getting Started
 
