@@ -2,23 +2,16 @@
 
 Custom API Integration Manager is a SaaS solution designed for non-developers to easily create and manage custom API integrations between various tools such as CRM, ERP, and e-commerce platforms.
 
-## Features (Coming Soon)
+## Features
 
 - User-friendly interface for creating API integrations
 - Support for popular CRM, ERP, and e-commerce platforms
 - Custom workflow creation
 - Real-time data synchronization via webhooks
-  - Generate unique webhook URLs for each integration
-  - Handle incoming webhook requests using serverless functions
-  - Display real-time status updates in the dashboard
 - Detailed analytics and logging
 - Dashboard with API usage overview, integration status, and subscription information
 - Pricing page with subscription tiers and Stripe integration for easy upgrades
 - API Integration Wizard for non-developers
-  - Platform selection
-  - OAuth or API key connection
-  - Drag-and-drop field mapping
-  - Integration testing with instant feedback
 
 ## Project Structure
 
@@ -41,11 +34,15 @@ Custom API Integration Manager is a SaaS solution designed for non-developers to
 
 ## Getting Started
 
-This project is currently in development. Stay tuned for updates and installation instructions.
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up your Supabase project and update the `.env.local` file with your credentials
+4. Set up your Stripe account and update the `.env.local` file with your Stripe keys
+5. Run the development server: `npm run dev`
 
 ## Contributing
 
-We welcome contributions! Please see our contributing guidelines (coming soon) for more information on how to get involved.
+We welcome contributions! Please see our contributing guidelines for more information on how to get involved.
 
 ## License
 

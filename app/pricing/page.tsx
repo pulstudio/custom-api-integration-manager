@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { loadStripe } from '@stripe/stripe-js';
+import { createClient } from '@/utils/supabase/client';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -28,13 +29,21 @@ const plans = [
 
 export default function PricingPage() {
   const handleSubscribe = async (priceId: string) => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      alert('Please log in to subscribe');
+      return;
+    }
+
     const stripe = await stripePromise;
     const response = await fetch('/api/create-checkout-session', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ priceId }),
+      body: JSON.stringify({ priceId, userId: user.id }),
     });
     const session = await response.json();
     const result = await stripe!.redirectToCheckout({

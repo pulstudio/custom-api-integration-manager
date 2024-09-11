@@ -2,34 +2,76 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
-import Image from 'next/image';
 import { useSwipeable } from 'react-swipeable';
 
-// Mock data (replace with actual data fetching logic later)
-const mockData = {
-  user: { name: 'John Doe', avatar: '/avatar-placeholder.png' },
-  apiCalls: 1500,
-  apiLimit: 2000,
-  integrations: [
-    { name: 'Salesforce', status: 'Active' },
-    { name: 'HubSpot', status: 'Pending' },
-    { name: 'Shopify', status: 'Failed' },
-  ],
-  subscriptionPlan: 'Pro',
-};
+interface User {
+  name: string;
+  subscription_tier: string;
+  integration_limit: number;
+}
+
+interface Integration {
+  name: string;
+  status: string;
+}
+
+interface WebhookEvent {
+  event_type: string;
+  created_at: string;
+}
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState(0);
   const sections = ['API Usage', 'Integrations', 'Subscription'];
-  const [recentEvents, setRecentEvents] = useState([]);
+  const [recentEvents, setRecentEvents] = useState<WebhookEvent[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const supabase = createClient();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error fetching user:', userError);
+        return;
+      }
+
+      if (userData.user) {
+        const { data: userDetails, error: detailsError } = await supabase
+          .from('users')
+          .select('name, subscription_tier, integration_limit')
+          .eq('id', userData.user.id)
+          .single();
+
+        if (detailsError) {
+          console.error('Error fetching user details:', detailsError);
+        } else {
+          setUser(userDetails);
+        }
+
+        const { data: integrationsData, error: integrationsError } = await supabase
+          .from('integrations')
+          .select('name, status')
+          .eq('user_id', userData.user.id);
+
+        if (integrationsError) {
+          console.error('Error fetching integrations:', integrationsError);
+        } else {
+          setIntegrations(integrationsData);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
 
-    // Subscribe to real-time updates
     const channel = supabase
       .channel('webhook_events')
-      .on('INSERT', { event: 'webhook_events' }, (payload) => {
+      .on('INSERT', { event: 'webhook_events' }, (payload: { new: WebhookEvent }) => {
         setRecentEvents((prev) => [payload.new, ...prev.slice(0, 4)]);
       })
       .subscribe();
@@ -47,14 +89,7 @@ export default function Dashboard() {
   return (
     <div className="container mx-auto px-4 py-8" {...handlers}>
       <header className="flex flex-col md:flex-row items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold mb-4 md:mb-0">Welcome, {mockData.user.name}</h1>
-        <Image
-          src={mockData.user.avatar}
-          alt="User Avatar"
-          width={48}
-          height={48}
-          className="rounded-full"
-        />
+        <h1 className="text-3xl font-bold mb-4 md:mb-0">Welcome, {user?.name}</h1>
       </header>
 
       <div className="flex mb-4 overflow-x-auto">
@@ -74,23 +109,18 @@ export default function Dashboard() {
       {activeSection === 0 && (
         <section className="card mb-8">
           <h2 className="text-xl font-semibold mb-4">API Usage Overview</h2>
-          <div className="h-40 bg-gray-200 rounded flex items-end">
-            <div
-              className="bg-primary h-full rounded"
-              style={{ width: `${(mockData.apiCalls / mockData.apiLimit) * 100}%` }}
-            ></div>
-          </div>
-          <p className="mt-2 text-sm text-gray-600">
-            {mockData.apiCalls} / {mockData.apiLimit} API calls this month
-          </p>
+          {/* Implement API usage chart here */}
         </section>
       )}
 
       {activeSection === 1 && (
         <section className="card mb-8">
           <h2 className="text-xl font-semibold mb-4">Integrations</h2>
+          <p className="mb-4">
+            You have {integrations.length} out of {user?.integration_limit} integrations.
+          </p>
           <ul className="space-y-2">
-            {mockData.integrations.map((integration, index) => (
+            {integrations.map((integration, index) => (
               <li key={index} className="flex justify-between items-center">
                 <span>{integration.name}</span>
                 <span className={`px-2 py-1 rounded text-sm ${
@@ -117,11 +147,9 @@ export default function Dashboard() {
       {activeSection === 2 && (
         <section className="card mb-8">
           <h2 className="text-xl font-semibold mb-4">Subscription Plan</h2>
-          <p className="mb-2">Current Plan: <strong>{mockData.subscriptionPlan}</strong></p>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-            <div className="bg-primary h-2.5 rounded-full" style={{ width: '75%' }}></div>
-          </div>
-          <p className="mt-2 text-sm text-gray-600">75% of your plan limit used</p>
+          <p className="mb-2">Current Plan: <strong>{user?.subscription_tier}</strong></p>
+          <p className="mb-4">Integration Limit: {user?.integration_limit}</p>
+          <a href="/pricing" className="btn">Upgrade Plan</a>
         </section>
       )}
     </div>

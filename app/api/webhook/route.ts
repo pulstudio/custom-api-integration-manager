@@ -15,13 +15,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Integration ID is required' }, { status: 400 });
   }
 
-  // Store the webhook data in Supabase
+  // Use the secure function to insert the webhook event
   const { data, error } = await supabase
-    .from('webhook_events')
-    .insert({
-      integration_id: integrationId,
-      event_type: body.event_type,
-      payload: body,
+    .rpc('insert_webhook_event', {
+      p_integration_id: integrationId,
+      p_event_type: body.event_type,
+      p_payload: body
     });
 
   if (error) {

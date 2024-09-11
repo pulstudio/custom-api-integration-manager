@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { v4 as uuidv4 } from 'uuid';
+import { createClient } from '@/utils/supabase/client';
 
 const platforms = [
   { name: 'Salesforce', logo: '/logos/salesforce.png' },
@@ -18,7 +19,22 @@ const fields = [
   { id: 'email', name: 'Email' },
 ];
 
-const DraggableField = ({ field, type }) => {
+interface Field {
+  id: string;
+  name: string;
+}
+
+interface Platform {
+  name: string;
+  logo: string;
+}
+
+interface DraggableFieldProps {
+  field: Field;
+  type: string;
+}
+
+const DraggableField: React.FC<DraggableFieldProps> = ({ field, type }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'field',
     item: { id: field.id, type },
@@ -39,10 +55,15 @@ const DraggableField = ({ field, type }) => {
   );
 };
 
-const DroppableArea = ({ onDrop, mappedFields }) => {
+interface DroppableAreaProps {
+  onDrop: (item: Field) => void;
+  mappedFields: Field[];
+}
+
+const DroppableArea: React.FC<DroppableAreaProps> = ({ onDrop, mappedFields }) => {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'field',
-    drop: (item) => onDrop(item),
+    drop: (item: Field) => onDrop(item),
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
     }),
@@ -69,25 +90,66 @@ const DroppableArea = ({ onDrop, mappedFields }) => {
 
 export default function ApiIntegrationWizard() {
   const [step, setStep] = useState(1);
-  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null);
   const [apiKey, setApiKey] = useState('');
-  const [mappedFields, setMappedFields] = useState([]);
-  const [testResult, setTestResult] = useState(null);
+  const [mappedFields, setMappedFields] = useState<Field[]>([]);
+  const [testResult, setTestResult] = useState<string | null>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [user, setUser] = useState<{ subscription_tier: string; integration_limit: number } | null>(null);
+  const [currentIntegrations, setCurrentIntegrations] = useState<number>(0);
 
-  const handlePlatformSelect = (platform) => {
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const supabase = createClient();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error fetching user:', userError);
+        return;
+      }
+
+      if (userData.user) {
+        const { data: userDetails, error: detailsError } = await supabase
+          .from('users')
+          .select('subscription_tier, integration_limit')
+          .eq('id', userData.user.id)
+          .single();
+
+        if (detailsError) {
+          console.error('Error fetching user details:', detailsError);
+        } else {
+          setUser(userDetails);
+        }
+
+        const { count, error: countError } = await supabase
+          .from('integrations')
+          .select('id', { count: 'exact' })
+          .eq('user_id', userData.user.id);
+
+        if (countError) {
+          console.error('Error fetching integration count:', countError);
+        } else {
+          setCurrentIntegrations(count || 0);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handlePlatformSelect = (platform: Platform) => {
     setSelectedPlatform(platform);
     setStep(2);
   };
 
-  const handleApiKeySubmit = (e) => {
+  const handleApiKeySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Here you would validate the API key with the selected platform
     // For now, we'll just move to the next step
     setStep(3);
   };
 
-  const handleFieldDrop = (item) => {
+  const handleFieldDrop = (item: Field) => {
     setMappedFields((prev) => [...prev, item]);
   };
 
@@ -102,6 +164,25 @@ export default function ApiIntegrationWizard() {
     // For now, we'll just simulate a successful test
     setTestResult('success');
     setStep(4);
+  };
+
+  const handleFinishSetup = async () => {
+    if (user && currentIntegrations >= user.integration_limit) {
+      alert('You have reached your integration limit. Please upgrade your plan to create more integrations.');
+      return;
+    }
+
+    // Here you would save the integration to your database
+    // For now, we'll just simulate a successful save
+    setCurrentIntegrations(prev => prev + 1);
+    alert('Integration saved successfully!');
+    // Reset the wizard
+    setStep(1);
+    setSelectedPlatform(null);
+    setApiKey('');
+    setMappedFields([]);
+    setTestResult(null);
+    setWebhookUrl('');
   };
 
   return (
@@ -189,7 +270,7 @@ export default function ApiIntegrationWizard() {
               </p>
             </div>
           )}
-          <button onClick={handleTestIntegration} className="btn mt-4">
+          <button onClick={handleFinishSetup} className="btn mt-4">
             Finish Setup
           </button>
         </div>
